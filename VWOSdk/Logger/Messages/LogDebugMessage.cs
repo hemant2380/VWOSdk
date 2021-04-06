@@ -102,5 +102,20 @@ namespace VWOSdk
         public static void SegmentationStatus(string file , string userId, string campaignKey, string apiName, string variationName, string status) {
             Log.Debug($"({file}): In API: {apiName}, Whitelisting for UserId:{userId} in campaing:{campaignKey} for variation: {variationName} is: {status}");
         }
+
+
+        //Batch Event
+        public static void RequestTimeIntervalOutOfBound(string file, int min_value,int default_value)
+        {
+            Log.Debug($"({file}): requestTimeInterval should be > {min_value.ToString()}. Assigning it the default value i.e {default_value.ToString()} seconds");
+        }
+        public static void EventsPerRequestOutOfBound(string file, int min_value, int max_value, int default_value)
+        {
+            Log.Debug($"({file}): eventsPerRequest should be > {min_value.ToString()} and <= {max_value.ToString()}. Assigning it the default value i.e {default_value.ToString()}");
+        }
+        //REQUEST_TIME_INTERVAL_OUT_OF_BOUNDS("requestTimeInterval should be > {{min_value}}. Assigning it the default value i.e {{default_value}} seconds");
+       // EVENTS_PER_REQUEST_OUT_OF_BOUNDS("eventsPerRequest should be > {{min_value}} and <= {{max_value}}. Assigning it the default value i.e {{default_value}}")
+
+
     }
 }

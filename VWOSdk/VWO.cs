@@ -1,23 +1,23 @@
 ﻿#pragma warning disable 1587
+using System.Collections.Generic;
 /**
- * Copyright 2019-2020 Wingify Software Pvt. Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-#pragma warning restore 1587
-
+* Copyright 2019-2020 Wingify Software Pvt. Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 namespace VWOSdk
 {
+
     public partial class VWO
     {
         private static IValidator Validator;
@@ -27,7 +27,7 @@ namespace VWOSdk
         private static readonly ISegmentEvaluator SegmentEvaluator;
         private static ISettingsProcessor SettingsProcessor;
         private static readonly string file = typeof(VWO).FullName;
-
+        private BatchEventQueue batchEventQueue;
         /// <summary>
         /// Static Constructor to init default dependencies on application load.
         /// </summary>
@@ -91,7 +91,7 @@ namespace VWOSdk
             {
                 ApiRequest apiRequest = ServerSideVerb.SettingsRequest(accountId, sdkKey);
                 var settings = apiRequest.Execute<Settings>();
-                if(settings == null)
+                if (settings == null)
                 {
                     LogErrorMessage.SettingsFileCorrupted(file);
                 }
@@ -105,31 +105,38 @@ namespace VWOSdk
         /// </summary>
         /// <param name="settingFile">Settings as provided by GetSettings call.</param>
         /// <param name="isDevelopmentMode">When running in development or non-production mode. This ensures no operations are tracked on VWO account.</param>
+        /// <param name="batchData">Event batching requestTimeInterval,eventsPerRequest,flushCallback value.</param>
         /// <param name="userStorageService">UserStorageService to Get and Save User-assigned variations.</param>
         /// <param name="goalTypeToTrack">Specify which goalType to track.</param>
         /// <param name="shouldTrackReturningUser">Should track returning user or not.</param>
         /// <returns>
         /// IVWOClient instance to call Activate, GetVariation and Track apis for given user and goal.
         /// </returns>
-        public static IVWOClient Launch(Settings settingFile, bool isDevelopmentMode = false, IUserStorageService userStorageService = null, string goalTypeToTrack = Constants.GoalTypes.ALL, bool shouldTrackReturningUser = false)
+
+        public static IVWOClient Launch(Settings settingFile, bool isDevelopmentMode = false, IUserStorageService userStorageService = null,
+           BatchEventData batchData = null, string goalTypeToTrack = Constants.GoalTypes.ALL, bool shouldTrackReturningUser = false)
         {
             if (Validator.SettingsFile(settingFile))
             {
+
+
                 LogDebugMessage.ValidConfiguration(file);
                 AccountSettings accountSettings = SettingsProcessor.ProcessAndBucket(settingFile);
                 LogDebugMessage.SettingsFileProcessed(file);
                 if (accountSettings == null)
                     return null;
 
-                if(isDevelopmentMode)
+                if (isDevelopmentMode)
                     LogDebugMessage.SetDevelopmentMode(file);
 
-                var vwoClient = new VWO(accountSettings, Validator, userStorageService, CampaignAllocator, SegmentEvaluator, VariationAllocator, isDevelopmentMode, goalTypeToTrack, shouldTrackReturningUser);
+                var vwoClient = new VWO(accountSettings, Validator, userStorageService, CampaignAllocator, SegmentEvaluator,
+                    VariationAllocator, isDevelopmentMode, batchData, goalTypeToTrack, shouldTrackReturningUser);
                 LogDebugMessage.SdkInitialized(file);
                 return vwoClient;
             }
             LogErrorMessage.ProjectConfigCorrupted(file);
             return null;
         }
+
     }
 }

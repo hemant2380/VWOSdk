@@ -22,7 +22,8 @@ namespace VWOSdk
 {
     internal enum Method
     {
-        GET = 0
+        GET = 0,
+        POST = 1 //add this for Batch event post
     }
 
     internal class ApiRequest

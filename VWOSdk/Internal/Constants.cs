@@ -44,6 +44,8 @@ namespace VWOSdk
             internal static readonly string TRACK_USER = "track-user";
             internal static readonly string TRACK_GOAL = "track-goal";
             internal static readonly string PUSH_TAGS = "push";
+            internal static readonly string BATCH_EVENTS = "batch-events";
+            
         }
 
         public static class CampaignStatus
@@ -148,5 +150,6 @@ namespace VWOSdk
                 "REVENUE_TRACKING", "CUSTOM_GOAL", "ALL"
             };
         }
+       
     }
 }

@@ -110,6 +110,11 @@ namespace VWOSdk
             Log.Error($"({file}): Goal:{goalIdentifier} not found for campaign:{campaignKey} and userId:{userId}");
         }
 
+        internal static void TrackApiGoalFound(string file, string goalIdentifier, string campaignKey, string userId)
+        {
+            Log.Error($"({file}): Goal:{goalIdentifier} found for campaign:{campaignKey} and userId:{userId}");
+        }
+
         public static void CustomLoggerMisconfigured(string file)
         {
             Log.Error($"({file}): custom logger is provided but seems to have misconfigured. please check the api docs. using default logger.");

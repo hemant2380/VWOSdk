@@ -132,5 +132,8 @@ namespace VWOSdk
         /// False, If userId provided is not part of campaign or when unexpected error comes and no impression call is made to the VWO server.
         /// </returns>
         bool Push(string tagKey, dynamic tagValue, string userId);
+
+        BatchEventQueue getBatchEventQueue();
+
     }
 }

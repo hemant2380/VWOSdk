@@ -29,6 +29,7 @@ namespace VWOSdk
         private static readonly string TrackUserVerb = Constants.Endpoints.TRACK_USER;
         private static readonly string TrackGoalVerb = Constants.Endpoints.TRACK_GOAL;
         private static readonly string PushTagsVerb = Constants.Endpoints.PUSH_TAGS;
+        private static readonly string BatchEventVerb = Constants.Endpoints.BATCH_EVENTS;
         private static readonly string file = typeof(ServerSideVerb).FullName;
         private static readonly string sdkVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
@@ -55,6 +56,34 @@ namespace VWOSdk
             return trackUserRequest;
         }
 
+        //Event Batching
+        internal static ApiRequest EventBatchingUri(long accountId, bool isDevelopmentMode)
+        {
+            string queryParams = GetQueryParamertersForEventBatching(accountId);
+            var trackUserRequest = new ApiRequest(Method.POST, isDevelopmentMode)
+            {
+                Uri = new Uri($"{Host}/{Verb}/{BatchEventVerb}?{queryParams}"),
+            };
+          
+            LogDebugMessage.ImpressionForTrackUser(file, queryParams);
+            return trackUserRequest;
+        }
+        private static string GetQueryParamertersForEventBatching(long accountId)
+        {
+            return $"{withMinifiedAccountIdQuery(accountId)}" +
+
+                $"&{GetBatchSdkQuery()}";
+        }
+        private static string GetBatchSdkQuery()
+        {
+            return $"sd=netstandard2.0&sv={sdkVersion}";
+        }
+        private static string withMinifiedAccountIdQuery(long accountId)
+        {
+            return $"a={accountId}";
+        }
+
+        // End
         internal static ApiRequest TrackGoal(int accountId, int campaignId, int variationId, string userId, int goalId, string revenueValue, bool isDevelopmentMode)
         {
             string queryParams = GetQueryParamertersForTrackGoal(accountId, campaignId, variationId, userId, goalId, revenueValue);
@@ -125,7 +154,7 @@ namespace VWOSdk
         {
             return $"sdk=netstandard2.0&sdk-v={sdkVersion}";
         }
-
+       
         private static string GetQueryParamertersForTrackUser(long accountId, int campaignId, int variationId, string userId)
         {
             return $"{GetAccountIdQuery(accountId)}" +
@@ -139,7 +168,7 @@ namespace VWOSdk
                 $"&{GetEdQuery()}" +
                 $"&{GetSdkQuery()}";
         }
-
+       
         private static string GetEdQuery()
         {
             return "ed={\"p\":\"server\"}";

@@ -32,8 +32,15 @@ namespace VWOSdk
         private readonly bool _isDevelopmentMode;
         private readonly string _goalTypeToTrack;
         private readonly bool _shouldTrackReturningUser;
+     
+      
+        private readonly BatchEventData _BatchEventData;
+        private readonly BatchEventQueue _BatchEventQueue;
 
-        internal VWO(AccountSettings settings, IValidator validator, IUserStorageService userStorageService, ICampaignAllocator campaignAllocator, ISegmentEvaluator segmentEvaluator, IVariationAllocator variationAllocator, bool isDevelopmentMode, string goalTypeToTrack = Constants.GoalTypes.ALL, bool shouldTrackReturningUser = false)
+        internal VWO(AccountSettings settings, IValidator validator, IUserStorageService userStorageService,
+            ICampaignAllocator campaignAllocator, ISegmentEvaluator segmentEvaluator,
+            IVariationAllocator variationAllocator, bool isDevelopmentMode,  BatchEventData batchEventData,
+            string goalTypeToTrack = Constants.GoalTypes.ALL, bool shouldTrackReturningUser = false )
         {
             this._settings = settings;
             this._validator = validator;
@@ -43,9 +50,12 @@ namespace VWOSdk
             this._isDevelopmentMode = isDevelopmentMode;
             this._segmentEvaluator = segmentEvaluator;
             this._goalTypeToTrack = goalTypeToTrack;
-            this._shouldTrackReturningUser = shouldTrackReturningUser;
+            this._shouldTrackReturningUser = shouldTrackReturningUser;          
+            this._BatchEventData = batchEventData;        
+            this._BatchEventQueue = new BatchEventQueue(batchEventData, settings.SdkKey, this._settings.AccountId, isDevelopmentMode);
+           
         }
-
+      
         #region IVWOClient Methods
 
         /// <summary>
@@ -60,7 +70,9 @@ namespace VWOSdk
         public string Activate(string campaignKey, string userId, Dictionary<string, dynamic> options = null)
         {
             if (options == null) options = new Dictionary<string, dynamic>();
+
             Dictionary<string, dynamic> customVariables = options.ContainsKey("customVariables") ? options["customVariables"] : null;
+
             Dictionary<string, dynamic> variationTargetingVariables = options.ContainsKey("variationTargetingVariables") ? options["variationTargetingVariables"] : null;
             if (this._validator.Activate(campaignKey, userId, options))
             {
@@ -78,8 +90,13 @@ namespace VWOSdk
                 var assignedVariation = this.AllocateVariation(campaignKey, userId, campaign, customVariables, variationTargetingVariables, apiName: nameof(Activate));
                 if (assignedVariation.Variation != null)
                 {
-                    var trackUserRequest = ServerSideVerb.TrackUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode);
-                    trackUserRequest.ExecuteAsync();
+                   
+               
+                    
+                        //add in queue
+                        this._BatchEventQueue.addInQueue(HttpRequestBuilder.getBatchEventForTrackingUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode));
+                   
+
                     return assignedVariation.Variation.Name;
                 }
             }
@@ -174,10 +191,12 @@ namespace VWOSdk
                 {
                     if (string.IsNullOrEmpty(selectedGoalIdentifier) == false)
                     {
-                        if (goalTypeToTrack != assignedVariation.Goal.Type && goalTypeToTrack != Constants.GoalTypes.ALL) {
+                        if (goalTypeToTrack != assignedVariation.Goal.Type && goalTypeToTrack != Constants.GoalTypes.ALL)
+                        {
                             return false;
                         }
-                        if (!this.isGoalTriggerRequired(campaignKey, userId, goalIdentifier, variationName, shouldTrackReturningUser)) {
+                        if (!this.isGoalTriggerRequired(campaignKey, userId, goalIdentifier, variationName, shouldTrackReturningUser))
+                        {
                             return false;
                         }
                         bool sendImpression = true;
@@ -193,8 +212,15 @@ namespace VWOSdk
 
                         if (sendImpression)
                         {
-                            var trackGoalRequest = ServerSideVerb.TrackGoal(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, assignedVariation.Goal.Id, revenueValue, this._isDevelopmentMode);
-                            trackGoalRequest.ExecuteAsync();
+                           
+                                //add in queue
+                                this._BatchEventQueue.addInQueue(
+                                HttpRequestBuilder.getBatchEventForTrackingGoal(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id,
+                                userId, assignedVariation.Goal.Id,revenueValue, this._isDevelopmentMode));
+                           
+
+                            LogErrorMessage.TrackApiGoalFound(file, goalIdentifier, campaignKey, userId);
+                           
                             return true;
                         }
                     }
@@ -219,10 +245,11 @@ namespace VWOSdk
         /// True, if an impression event is successfully being made to the VWO server for report generation.
         /// False, If userId provided is not part of campaign or when unexpected error comes and no impression call is made to the VWO server.
         /// </returns>
-        public Dictionary<string, bool> Track(List <string> campaignKeys, string userId, string goalIdentifier, Dictionary<string, dynamic> options = null)
+        public Dictionary<string, bool> Track(List<string> campaignKeys, string userId, string goalIdentifier, Dictionary<string, dynamic> options = null)
         {
             Dictionary<string, bool> result = new Dictionary<string, bool>();
-            foreach (string campaignKey in campaignKeys) {
+            foreach (string campaignKey in campaignKeys)
+            {
                 result[campaignKey] = this.Track(campaignKey, userId, goalIdentifier, options);
             }
             return result;
@@ -248,15 +275,19 @@ namespace VWOSdk
 
             Dictionary<string, bool> result = new Dictionary<string, bool>();
             bool campaignFound = false;
-            foreach (BucketedCampaign campaign in this._settings.Campaigns) {
-                foreach(KeyValuePair<string, Goal> goal in campaign.Goals) {
-                    if (goal.Key != null && goalIdentifier == goal.Value.Identifier && (goalTypeToTrack == Constants.GoalTypes.ALL || goalTypeToTrack == goal.Value.Type)) {
+            foreach (BucketedCampaign campaign in this._settings.Campaigns)
+            {
+                foreach (KeyValuePair<string, Goal> goal in campaign.Goals)
+                {
+                    if (goal.Key != null && goalIdentifier == goal.Value.Identifier && (goalTypeToTrack == Constants.GoalTypes.ALL || goalTypeToTrack == goal.Value.Type))
+                    {
                         campaignFound = true;
                         result[campaign.Key] = this.Track(campaign.Key, userId, goalIdentifier, options);
                     }
                 }
             }
-            if (!campaignFound) {
+            if (!campaignFound)
+            {
                 LogErrorMessage.NoCampaignForGoalFound(file, goalIdentifier);
                 return null;
             }
@@ -297,9 +328,13 @@ namespace VWOSdk
                 if (campaign.Type == Constants.CampaignTypes.FEATURE_TEST)
                 {
                     if (assignedVariation.Variation != null)
-                    {
-                        var trackUserRequest = ServerSideVerb.TrackUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode);
-                        trackUserRequest.ExecuteAsync();
+                    {                      
+
+                        
+                            //add in queue
+                            this._BatchEventQueue.addInQueue(HttpRequestBuilder.getBatchEventForTrackingUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId,  this._isDevelopmentMode) );
+                       
+
                         var result = assignedVariation.Variation.IsFeatureEnabled;
 
                         if (result)
@@ -415,8 +450,12 @@ namespace VWOSdk
                     LogErrorMessage.TagValueLengthExceeded(typeof(IVWOClient).FullName, tagValue, userId, nameof(Push));
                     return false;
                 }
-                var pushRequest = ServerSideVerb.PushTags(this._settings, tagKey, tagValue, userId, this._isDevelopmentMode);
-                pushRequest.ExecuteAsync();
+             
+               
+                    //add in event queue
+                    this._BatchEventQueue.addInQueue(HttpRequestBuilder.getBatchEventForPushTags(this._settings.AccountId, tagKey, tagValue, userId, this._isDevelopmentMode));
+              
+
                 return true;
             }
             return false;
@@ -470,7 +509,7 @@ namespace VWOSdk
                         {
                             variationTargetingVariables = new Dictionary<string, dynamic>();
                         }
-                        if (!this._segmentEvaluator.evaluate(userId, campaignKey, segmentationType, campaign.Segments, customVariables ))
+                        if (!this._segmentEvaluator.evaluate(userId, campaignKey, segmentationType, campaign.Segments, customVariables))
                         {
                             return new UserAllocationInfo();
                         }
@@ -534,7 +573,7 @@ namespace VWOSdk
             foreach (var variation in campaign.Variations.All())
             {
                 string status = Constants.SegmentationStatus.FAILED;
-                string segmentationType  = Constants.SegmentationType.WHITELISTING;
+                string segmentationType = Constants.SegmentationType.WHITELISTING;
                 if (variation.Segments.Count == 0)
                 {
                     LogDebugMessage.SkippingSegmentation(typeof(IVWOClient).FullName, userId, campaignKey, apiName, variation.Name);
@@ -598,16 +637,22 @@ namespace VWOSdk
             UserStorageMap userMap = this._userStorageService.GetUserMap(campaignKey, userId);
             if (userMap == null) return true;
             string storedGoalIdentifier = null;
-            if (userMap.GoalIdentifier != null) {
+            if (userMap.GoalIdentifier != null)
+            {
                 storedGoalIdentifier = userMap.GoalIdentifier;
                 string[] identifiers = storedGoalIdentifier.Split(new string[] { Constants.GOAL_IDENTIFIER_SEPERATOR }, StringSplitOptions.None);
-                if (!((IList<string>)identifiers).Contains(goalIdentifier)) {
+                if (!((IList<string>)identifiers).Contains(goalIdentifier))
+                {
                     storedGoalIdentifier = storedGoalIdentifier + Constants.GOAL_IDENTIFIER_SEPERATOR + goalIdentifier;
-                } else if (!shouldTrackReturningUser) {
+                }
+                else if (!shouldTrackReturningUser)
+                {
                     LogInfoMessage.GoalAlreadyTracked(file, userId, campaignKey, goalIdentifier);
                     return false;
                 }
-            } else {
+            }
+            else
+            {
                 storedGoalIdentifier = goalIdentifier;
             }
             this._userStorageService.SetUserMap(userId, campaignKey, variationName, storedGoalIdentifier);
@@ -615,5 +660,12 @@ namespace VWOSdk
         }
 
         #endregion private Methods
+
+
+        //Test
+        public BatchEventQueue getBatchEventQueue()
+        {
+            return this._BatchEventQueue;
+        }
     }
 }
