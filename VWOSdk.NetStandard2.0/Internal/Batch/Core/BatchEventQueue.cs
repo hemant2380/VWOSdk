@@ -26,24 +26,28 @@ namespace VWOSdk
         private static readonly string file = typeof(BatchEventQueue).FullName;
 
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public BatchEventQueue(BatchEventData batchEvents, string apikey, int accountId, bool isDevelopmentMode)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
 
             if (batchEvents != null)
             {
-                if (batchEvents.RequestTimeInterval > 1)
+                if (batchEvents.RequestTimeInterval > 1 && batchEvents.RequestTimeInterval!=null)
                 {
-                    this.requestTimeInterval = batchEvents.RequestTimeInterval;
+                    this.requestTimeInterval = (int)batchEvents.RequestTimeInterval;
                 }
                 else
                 {
-                    LogDebugMessage.RequestTimeIntervalOutOfBound(file, 1, batchEvents.RequestTimeInterval);
+                    LogDebugMessage.RequestTimeIntervalOutOfBound(file, 1, batchEvents.RequestTimeInterval ==null ? 
+                        0:(int)batchEvents.RequestTimeInterval);
 
                 }
 
-                if (batchEvents.EventsPerRequest > 0 && batchEvents.EventsPerRequest <= MAX_EVENTS_PER_REQUEST)
+                if (batchEvents.EventsPerRequest > 0 && batchEvents.EventsPerRequest <= MAX_EVENTS_PER_REQUEST 
+                    && batchEvents.EventsPerRequest !=null)
                 {
-                    this.eventsPerRequest = Math.Min(batchEvents.EventsPerRequest, MAX_EVENTS_PER_REQUEST);
+                    this.eventsPerRequest = Math.Min((int)batchEvents.EventsPerRequest, MAX_EVENTS_PER_REQUEST);
                 }
                 else
                 {
@@ -147,7 +151,8 @@ namespace VWOSdk
 
         public bool flushAndClearInterval()
         {
-            return flush(true);
+            disposeData();
+            return true;
         }
 
 

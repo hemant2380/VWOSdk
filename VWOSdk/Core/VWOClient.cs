@@ -32,15 +32,15 @@ namespace VWOSdk
         private readonly bool _isDevelopmentMode;
         private readonly string _goalTypeToTrack;
         private readonly bool _shouldTrackReturningUser;
-     
-      
+
+
         private readonly BatchEventData _BatchEventData;
         private readonly BatchEventQueue _BatchEventQueue;
 
         internal VWO(AccountSettings settings, IValidator validator, IUserStorageService userStorageService,
             ICampaignAllocator campaignAllocator, ISegmentEvaluator segmentEvaluator,
-            IVariationAllocator variationAllocator, bool isDevelopmentMode,  BatchEventData batchEventData,
-            string goalTypeToTrack = Constants.GoalTypes.ALL, bool shouldTrackReturningUser = false )
+            IVariationAllocator variationAllocator, bool isDevelopmentMode, BatchEventData batchEventData,
+            string goalTypeToTrack = Constants.GoalTypes.ALL, bool shouldTrackReturningUser = false)
         {
             this._settings = settings;
             this._validator = validator;
@@ -50,12 +50,16 @@ namespace VWOSdk
             this._isDevelopmentMode = isDevelopmentMode;
             this._segmentEvaluator = segmentEvaluator;
             this._goalTypeToTrack = goalTypeToTrack;
-            this._shouldTrackReturningUser = shouldTrackReturningUser;          
-            this._BatchEventData = batchEventData;        
-            this._BatchEventQueue = new BatchEventQueue(batchEventData, settings.SdkKey, this._settings.AccountId, isDevelopmentMode);
-           
+            this._shouldTrackReturningUser = shouldTrackReturningUser;
+            this._BatchEventData = batchEventData;
+            if (batchEventData != null)
+            {
+                this._BatchEventQueue = new BatchEventQueue(batchEventData, settings.SdkKey, this._settings.AccountId, isDevelopmentMode);
+
+            }
+
         }
-      
+
         #region IVWOClient Methods
 
         /// <summary>
@@ -90,12 +94,22 @@ namespace VWOSdk
                 var assignedVariation = this.AllocateVariation(campaignKey, userId, campaign, customVariables, variationTargetingVariables, apiName: nameof(Activate));
                 if (assignedVariation.Variation != null)
                 {
-                   
-               
-                    
+
+
+
+
+                    if (this._BatchEventData != null)
+                    {
+
                         //add in queue
                         this._BatchEventQueue.addInQueue(HttpRequestBuilder.getBatchEventForTrackingUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode));
-                   
+                    }
+                    else
+                    {
+                        //Batch event not enabled
+                        var trackUserRequest = ServerSideVerb.TrackUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode);
+                        trackUserRequest.ExecuteAsync();
+                    }
 
                     return assignedVariation.Variation.Name;
                 }
@@ -212,15 +226,25 @@ namespace VWOSdk
 
                         if (sendImpression)
                         {
-                           
+
+
+                            //EnableBatchEvent set as true
+                            if (this._BatchEventData != null)
+                            {
                                 //add in queue
                                 this._BatchEventQueue.addInQueue(
                                 HttpRequestBuilder.getBatchEventForTrackingGoal(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id,
-                                userId, assignedVariation.Goal.Id,revenueValue, this._isDevelopmentMode));
-                           
+                                userId, assignedVariation.Goal.Id, revenueValue, this._isDevelopmentMode));
+                            }
+                            else
+                            {
+                                //Single data post
+                                var trackGoalRequest = ServerSideVerb.TrackGoal(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, assignedVariation.Goal.Id, revenueValue, this._isDevelopmentMode);
+                                trackGoalRequest.ExecuteAsync();
+                            }
 
                             LogErrorMessage.TrackApiGoalFound(file, goalIdentifier, campaignKey, userId);
-                           
+
                             return true;
                         }
                     }
@@ -328,17 +352,26 @@ namespace VWOSdk
                 if (campaign.Type == Constants.CampaignTypes.FEATURE_TEST)
                 {
                     if (assignedVariation.Variation != null)
-                    {                      
+                    {
 
-                        
-                            //add in queue
-                            this._BatchEventQueue.addInQueue(HttpRequestBuilder.getBatchEventForTrackingUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId,  this._isDevelopmentMode) );
-                       
+
 
                         var result = assignedVariation.Variation.IsFeatureEnabled;
 
                         if (result)
                         {
+
+                            if (this._BatchEventData != null)
+                            {
+                                //add in queue
+                                this._BatchEventQueue.addInQueue(HttpRequestBuilder.getBatchEventForTrackingUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode));
+
+                            }
+                            else
+                            {
+                                var trackUserRequest = ServerSideVerb.TrackUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode);
+                                trackUserRequest.ExecuteAsync();
+                            }
                             LogInfoMessage.FeatureEnabledForUser(typeof(IVWOClient).FullName, campaignKey, userId, nameof(IsFeatureEnabled));
                         }
                         else
@@ -450,11 +483,19 @@ namespace VWOSdk
                     LogErrorMessage.TagValueLengthExceeded(typeof(IVWOClient).FullName, tagValue, userId, nameof(Push));
                     return false;
                 }
-             
-               
+                if (this._BatchEventData != null)
+                {
                     //add in event queue
                     this._BatchEventQueue.addInQueue(HttpRequestBuilder.getBatchEventForPushTags(this._settings.AccountId, tagKey, tagValue, userId, this._isDevelopmentMode));
-              
+
+                }
+                else
+                {
+                    var pushRequest = ServerSideVerb.PushTags(this._settings, tagKey, tagValue, userId, this._isDevelopmentMode);
+                    pushRequest.ExecuteAsync();
+                }
+
+
 
                 return true;
             }

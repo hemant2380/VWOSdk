@@ -216,9 +216,9 @@ namespace VWOSdk.Tests
             VWO.Configure(mockSettingProcessor.Object);
 
 
-            var vwoClient = VWO.Launch(validSettings, true, null, null);
+            var vwoClient = VWO.Launch(validSettings, true);
             Assert.NotNull(vwoClient);
-            Assert.NotNull(vwoClient.getBatchEventQueue()); //Default batchEventsData
+            Assert.Null(vwoClient.getBatchEventQueue()); 
             Assert.IsType<VWO>(vwoClient);
 
             //"Event batching Queue should be defined if batchEventsData is passed"
@@ -229,11 +229,56 @@ namespace VWOSdk.Tests
 
             var vwoClientBatch = VWO.Launch(validSettings, true, null, batchData);
             Assert.NotNull(vwoClientBatch);
-            Assert.NotNull(vwoClientBatch.getBatchEventQueue()); // Passing batchEventsData
+         
+            Assert.Equal(0, vwoClientBatch.getBatchEventQueue().BatchQueueCount());
+            Assert.Equal(4, vwoClientBatch.getBatchEventQueue().eventsPerRequest);
+            Assert.Equal(20, vwoClientBatch.getBatchEventQueue().requestTimeInterval);
+
             Assert.IsType<VWO>(vwoClientBatch);
+
+            //"Event batching Queue should be defined if batchEventsData is passed even wrong format"
           
-            mockSettingProcessor.Verify(mock => mock.ProcessAndBucket(It.IsAny<Settings>()), Times.Exactly(2));
-            mockSettingProcessor.Verify(mock => mock.ProcessAndBucket(It.Is<Settings>(val => ReferenceEquals(val, validSettings))), Times.Exactly(2));
+            BatchEventData batchDataWrongFormat = new BatchEventData();
+      
+
+            var vwoClientBatchDefault = VWO.Launch(validSettings, true, null, batchDataWrongFormat);
+            Assert.NotNull(vwoClientBatchDefault);         
+            Assert.Equal(0, vwoClientBatchDefault.getBatchEventQueue().BatchQueueCount());
+            Assert.Equal(100, vwoClientBatchDefault.getBatchEventQueue().eventsPerRequest);
+            Assert.Equal(600, vwoClientBatchDefault.getBatchEventQueue().requestTimeInterval);
+            Assert.IsType<VWO>(vwoClientBatchDefault);
+
+            //"Event batching Queue should be defined if batchEventsData is passed null value"
+            BatchEventData batchDataNullValue = new BatchEventData();
+            batchDataNullValue.EventsPerRequest = null;
+            batchDataNullValue.RequestTimeInterval = null;
+            batchDataNullValue.FlushCallback = null;
+
+            var vwoClientBatchNull = VWO.Launch(validSettings, true, null, batchDataNullValue);
+            Assert.NotNull(vwoClientBatchNull);
+            Assert.Equal(0, vwoClientBatchNull.getBatchEventQueue().BatchQueueCount());
+            Assert.Equal(100, vwoClientBatchNull.getBatchEventQueue().eventsPerRequest);
+            Assert.Equal(600, vwoClientBatchNull.getBatchEventQueue().requestTimeInterval);
+            Assert.IsType<VWO>(vwoClientBatchNull);
+
+
+            //"Event batching Queue should be defined if batchEventsData cross the limits"
+            BatchEventData batchDataLimitCheck = new BatchEventData();
+            batchDataLimitCheck.EventsPerRequest = 6000;
+            batchDataLimitCheck.RequestTimeInterval = 0;
+            batchDataLimitCheck.FlushCallback = null;
+
+            var vwoClientBatchLimit = VWO.Launch(validSettings, true, null, batchDataLimitCheck);
+            Assert.NotNull(vwoClientBatchLimit);
+            Assert.Equal(0, vwoClientBatchLimit.getBatchEventQueue().BatchQueueCount());
+            Assert.Equal(100, vwoClientBatchLimit.getBatchEventQueue().eventsPerRequest);
+            Assert.Equal(600, vwoClientBatchLimit.getBatchEventQueue().requestTimeInterval);
+            Assert.IsType<VWO>(vwoClientBatchLimit);
+
+
+
+            mockSettingProcessor.Verify(mock => mock.ProcessAndBucket(It.IsAny<Settings>()), Times.Exactly(5));
+            mockSettingProcessor.Verify(mock => mock.ProcessAndBucket(It.Is<Settings>(val => ReferenceEquals(val, validSettings))), Times.Exactly(5));
 
            
         }

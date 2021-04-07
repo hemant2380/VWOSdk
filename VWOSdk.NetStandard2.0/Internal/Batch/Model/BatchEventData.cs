@@ -1,6 +1,6 @@
 ﻿namespace VWOSdk
 {
-    public enum EVENT_TYPES
+    internal enum EVENT_TYPES
     {
         TRACK_USER = 1,
         TRACK_GOAL = 2,
@@ -11,12 +11,12 @@
 
     public class BatchEventData
     {
-        internal int eventsPerRequest;
-        internal int requestTimeInterval;
-        internal bool enableBatch;
+        internal int? eventsPerRequest;
+        internal int? requestTimeInterval;
+       
         internal IFlushInterface flushCallback;
        
-        public  int EventsPerRequest
+        public  int? EventsPerRequest
         {
             get
             {
@@ -29,7 +29,7 @@
         }
 
        
-        public  int RequestTimeInterval
+        public  int? RequestTimeInterval
         {
             get
             {
@@ -40,17 +40,7 @@
                 this.requestTimeInterval = value;
             }
         }
-        public  bool EnableBatchEvent
-        {
-            get
-            {
-                return enableBatch;
-            }
-            set
-            {
-                this.enableBatch = value;
-            }
-        }
+      
 
         public  IFlushInterface FlushCallback
         {

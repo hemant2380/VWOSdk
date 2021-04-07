@@ -2217,7 +2217,7 @@ namespace VWOSdk.Tests
             var result = vwoClient.IsFeatureEnabled("x", MockUserId);
             Assert.True(result);
 
-            mockApiCaller.Verify(mock => mock.ExecuteAsync(It.IsAny<ApiRequest>()), Times.Never);
+            mockApiCaller.Verify(mock => mock.ExecuteAsync(It.IsAny<ApiRequest>()), Times.Once);
         }
 
         // Unique Goal Conversion + Multiple Campaign Key Test cases
