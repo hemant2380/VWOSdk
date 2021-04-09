@@ -1,22 +1,36 @@
-﻿using Newtonsoft.Json;
+﻿
+#pragma warning disable 1587
+/**
+ * Copyright 2019-2021 Wingify Software Pvt. Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#pragma warning restore 1587
+
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 namespace VWOSdk
 {
-
-
-    public class BuildQueryParams
-    {
-     
-    
-        public string u;
-   
+    /// <summary>
+    /// Build Query Params For Post. 
+    /// </summary>
+    internal class BuildQueryParams
+    {        
+        public string u;   
         public object r;
         public long sId;
-
-
         public string t;
         public int? e = null;
         public int? c = null;
@@ -24,10 +38,8 @@ namespace VWOSdk
       
         public int? g = null;
         public BuildQueryParams(Builder builder)
-        {
-           
-            this.u = builder.u;
-         
+        {           
+            this.u = builder.u;         
             this.r = builder.r;
             this.sId = builder.sId;
             this.t = builder.t;
@@ -40,34 +52,20 @@ namespace VWOSdk
 
 
         public class Builder
-        {
-          
-            public string u;
-         
+        {          
+            public string u;         
             public object r;
             public long sId;
-
             public string t;
-
             public int? e = null;
             public int? c = null;
-            public int eT;
-          
-            public int? g = null;
-
-            public Builder()
-            {
-            }
-
-          
-
+            public int eT;          
+            public int? g = null;           
             public Builder withMinifiedCampaignId(int campaignId)
             {
                 this.e = campaignId;
                 return this;
-            }
-
-          
+            }         
             private static double GetRandomNumber()
             {
                 Random random = new Random();
@@ -76,78 +74,48 @@ namespace VWOSdk
             public Builder withUuid(long account_id, string uId)
             {
                 this.u = UuidV5Helper.Compute(account_id, uId);
-
                 return this;
-            }
-
-           
-
+            }      
             public Builder withMinifiedVariationId(int variationId)
             {
                 this.c = variationId;
                 return this;
-            }
-
-           
-
+            }        
             public Builder withSid(long sId)
             {
                 this.sId = sId;
                 return this;
-            }
-
-          
-
+            }        
             public Builder withMinifiedGoalId(int goal_id)
             {
                 this.g = goal_id;
                 return this;
             }
 
-            public Builder withRevenue(Object r)
+            public Builder withRevenue(object r)
             {
                 this.r = r;
                 return this;
-            }
-
-          
-
+            }        
             public Builder withMinifiedEventType(int eventType)
             {
                 this.eT = eventType;
                 return this;
             }
-
             public Builder withMinifiedTags(String tagKey, String tagValue)
             {
                 this.t = "{\"u\":{\"" + tagKey + "\":\"" + tagValue + "\"}}";
                 return this;
             }
-
-
             public static Builder getInstance()
             {
                 return new Builder();
             }
-
             public BuildQueryParams build()
             {
                 return new BuildQueryParams(this);
             }
-        }
-
-        public IDictionary<string, dynamic> convertToMap(IDictionary<string, dynamic> map)
-        {
-
-            // Rename 'sdk_v' as 'sdk-v'
-            dynamic value;
-            map.TryGetValue("sdk_v", out value);
-            map.Add("sdk-v", value);
-            map.Remove("sdk_v");
-
-            return map;
-        }
-
+        }     
         public IDictionary<string, dynamic> removeNullValues(BuildQueryParams val)
         {
             string jsonString = Newtonsoft.Json.JsonConvert.SerializeObject(val);

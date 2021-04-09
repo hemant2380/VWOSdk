@@ -1,6 +1,6 @@
 ﻿#pragma warning disable 1587
 /**
- * Copyright 2019-2020 Wingify Software Pvt. Ltd.
+ * Copyright 2019-2021 Wingify Software Pvt. Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,19 +93,22 @@ namespace VWOSdk
         {
             Log.Debug($"({file}): impression built for track-goal - {properties}");
         }
-        public static void ImpressionForPushTag(string file, string properties) {
+        public static void ImpressionForPushTag(string file, string properties)
+        {
             Log.Debug($"({file}): impression built for push-tags - {properties}");
         }
-        public static void SkippingSegmentation(string file , string userId, string campaignKey, string apiName, string variationName) {
+        public static void SkippingSegmentation(string file, string userId, string campaignKey, string apiName, string variationName)
+        {
             Log.Debug($"({file}): In API: {apiName}, Skipping segmentation for UserId:{userId} in campaing:{campaignKey} for variation: {variationName} as no valid segment is found");
         }
-        public static void SegmentationStatus(string file , string userId, string campaignKey, string apiName, string variationName, string status) {
+        public static void SegmentationStatus(string file, string userId, string campaignKey, string apiName, string variationName, string status)
+        {
             Log.Debug($"({file}): In API: {apiName}, Whitelisting for UserId:{userId} in campaing:{campaignKey} for variation: {variationName} is: {status}");
         }
 
 
         //Batch Event
-        public static void RequestTimeIntervalOutOfBound(string file, int min_value,int default_value)
+        public static void RequestTimeIntervalOutOfBound(string file, int min_value, int default_value)
         {
             Log.Debug($"({file}): requestTimeInterval should be > {min_value.ToString()}. Assigning it the default value i.e {default_value.ToString()} seconds");
         }
@@ -114,8 +117,20 @@ namespace VWOSdk
             Log.Debug($"({file}): eventsPerRequest should be > {min_value.ToString()} and <= {max_value.ToString()}. Assigning it the default value i.e {default_value.ToString()}");
         }
         //REQUEST_TIME_INTERVAL_OUT_OF_BOUNDS("requestTimeInterval should be > {{min_value}}. Assigning it the default value i.e {{default_value}} seconds");
-       // EVENTS_PER_REQUEST_OUT_OF_BOUNDS("eventsPerRequest should be > {{min_value}} and <= {{max_value}}. Assigning it the default value i.e {{default_value}}")
+        // EVENTS_PER_REQUEST_OUT_OF_BOUNDS("eventsPerRequest should be > {{min_value}} and <= {{max_value}}. Assigning it the default value i.e {{default_value}}")
 
+        public static void EventQueueEmpty(string file)
+        {
+            Log.Debug($"({file}): Event Batching queue is empty");
+        }
+        public static void BeforeFlushing(string file, string manually, string length, string accountId, string timer, string queue_metadata)
+        {
+            Log.Debug($"({file}): Flushing events queue {manually} having {length} events for account:{accountId}. {timer}, queue summary: {queue_metadata}");
+        }
+        public static void AfterFlushing(string file, string manually, string length, string queue_metadata)
+        {
+            Log.Debug($"({file}): Events queue having {length} events has been flushed {manually}, queue summary: {queue_metadata}");
+        }
 
     }
 }

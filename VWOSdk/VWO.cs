@@ -1,23 +1,22 @@
 ﻿#pragma warning disable 1587
-using System.Collections.Generic;
 /**
-* Copyright 2019-2020 Wingify Software Pvt. Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*   http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2019-2021 Wingify Software Pvt. Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#pragma warning restore 1587
 namespace VWOSdk
 {
-
     public partial class VWO
     {
         private static IValidator Validator;
@@ -27,7 +26,7 @@ namespace VWOSdk
         private static readonly ISegmentEvaluator SegmentEvaluator;
         private static ISettingsProcessor SettingsProcessor;
         private static readonly string file = typeof(VWO).FullName;
-        private BatchEventQueue batchEventQueue;
+   
         /// <summary>
         /// Static Constructor to init default dependencies on application load.
         /// </summary>
@@ -90,6 +89,29 @@ namespace VWOSdk
             if (Validator.GetSettings(accountId, sdkKey))
             {
                 ApiRequest apiRequest = ServerSideVerb.SettingsRequest(accountId, sdkKey);
+                var settings = apiRequest.Execute<Settings>();
+                if (settings == null)
+                {
+                    LogErrorMessage.SettingsFileCorrupted(file);
+                }
+                return settings;
+            }
+            return default(Settings);
+        }
+        /// <summary>
+        /// Update SettingsFile for provided accountId and sdkKey.
+        /// </summary>
+        /// <param name="accountId">ID for VWO Account.</param>
+        /// <param name="sdkKey">SdkKey for Server-Side application.</param>
+        /// <returns>
+        /// Webhook Post  : Update Settings for valid accountId and sdkKey.
+        /// Null for invalid parameters, unable to connect to VWO, etc.
+        /// </returns>
+        public static Settings GetAndUpdateSettingsFile(long accountId, string sdkKey)
+        {
+            if (Validator.GetSettings(accountId, sdkKey))
+            {
+                ApiRequest apiRequest = ServerSideVerb.SettingsPullRequest(accountId, sdkKey);
                 var settings = apiRequest.Execute<Settings>();
                 if (settings == null)
                 {

@@ -41,6 +41,7 @@ namespace VWOSdk
             internal static readonly string BASE_URL = "https://dev.visualwebsiteoptimizer.com";
             internal static readonly string SERVER_SIDE = "server-side";
             internal static readonly string ACCOUNT_SETTINGS = "settings";
+            internal static readonly string WEBHOOK_SETTINGS_URL = "pull";            
             internal static readonly string TRACK_USER = "track-user";
             internal static readonly string TRACK_GOAL = "track-goal";
             internal static readonly string PUSH_TAGS = "push";

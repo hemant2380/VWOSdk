@@ -1,6 +1,6 @@
 ﻿#pragma warning disable 1587
 /**
- * Copyright 2019-2020 Wingify Software Pvt. Ltd.
+ * Copyright 2019-2021 Wingify Software Pvt. Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ namespace VWOSdk.Tests
         private readonly string MockTagKey = "MockTagKey";
         private readonly string MockTagValue = "MockTagValue";
         private readonly string MockVariableKey = "MockVariableKey";
-       
+
 
         private readonly Dictionary<string, dynamic> MockTrackCustomVariables = new Dictionary<string, dynamic>() {
             {"revenueValue", 0.321}
@@ -2445,14 +2445,14 @@ namespace VWOSdk.Tests
             Assert.Equal(MockVariationName, result);
             Assert.NotNull(result);
             Assert.Equal(1, vwoClient.getBatchEventQueue().BatchQueueCount());
-            vwoClient.getBatchEventQueue().flush(false);
+            vwoClient.getBatchEventQueue().flush(true);
             Assert.Equal(0, vwoClient.getBatchEventQueue().BatchQueueCount());
 
             mockCampaignResolver.Verify(mock => mock.GetCampaign(It.IsAny<AccountSettings>(), It.IsAny<string>()), Times.Once);
             mockCampaignResolver.Verify(mock => mock.GetCampaign(It.IsAny<AccountSettings>(), It.Is<string>(val => MockCampaignKey.Equals(val))), Times.Once);
-           
+
         }
-     
+
         [Fact]
         public void flushQueueOnMaxEventsTest()
         {
@@ -2474,26 +2474,26 @@ namespace VWOSdk.Tests
             var vwoClient = GetVwoClient(null, mockValidator: mockValidator,
                 mockCampaignResolver: mockCampaignResolver,
                 mockVariationResolver: mockVariationResolver, null, null, batchData);
-          
+
             var result1 = vwoClient.Activate(MockCampaignKey, MockUserId);
-           
+
             Assert.NotNull(result1);
-          
-          
+
+
             Assert.Equal(1, vwoClient.getBatchEventQueue().BatchQueueCount());
-           
+
             var result2 = vwoClient.Track(MockCampaignKey, MockUserId, MockGoalIdentifier, MockOptionsLower);
             Assert.True(result2);
             Thread.Sleep(2000);
             Assert.Equal(0, vwoClient.getBatchEventQueue().BatchQueueCount());
 
-           
+
         }
 
         [Fact]
         public void flushQueueOnTimerExpiredTest()
         {
-           
+
 
             //"Event Batching: queue should be flushed if requestTimeInterval is reached"
             var mockApiCaller = Mock.GetApiCaller<Settings>();
@@ -2514,10 +2514,8 @@ namespace VWOSdk.Tests
                 mockCampaignResolver: mockCampaignResolver,
                 mockVariationResolver: mockVariationResolver, null, null, batchData);
             var result1 = vwoClient.Activate(MockCampaignKey, MockUserId);
-          
+
             Assert.NotNull(result1);
-
-
             Assert.Equal(1, vwoClient.getBatchEventQueue().BatchQueueCount());
 
             var result2 = vwoClient.Track(MockCampaignKey, MockUserId, MockGoalIdentifier, MockOptionsLower);
@@ -2525,10 +2523,6 @@ namespace VWOSdk.Tests
             Assert.Equal(2, vwoClient.getBatchEventQueue().BatchQueueCount());
             Thread.Sleep(12000);
             Assert.Equal(0, vwoClient.getBatchEventQueue().BatchQueueCount());
-
-
-
-
 
         }
 
@@ -2555,47 +2549,18 @@ namespace VWOSdk.Tests
                 mockCampaignResolver: mockCampaignResolver,
                 mockVariationResolver: mockVariationResolver, null, null, batchData);
             var result1 = vwoClient.Activate(MockCampaignKey, MockUserId);
-          
             Assert.NotNull(result1);
-
-
             Assert.Equal(1, vwoClient.getBatchEventQueue().BatchQueueCount());
-          
-            bool isQueueFlushed= vwoClient.getBatchEventQueue().flushAndClearInterval();
-           
-           
+
+            bool isQueueFlushed = vwoClient.flushEvent(true);
             Assert.False(isQueueFlushed);
-           
+
             Assert.Equal(0, vwoClient.getBatchEventQueue().BatchQueueCount());
-
-
-
-
-
-
-          
         }
 
 
 
         #endregion
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

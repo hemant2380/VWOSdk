@@ -1,6 +1,6 @@
 ﻿#pragma warning disable 1587
 /**
- * Copyright 2019-2020 Wingify Software Pvt. Ltd.
+ * Copyright 2019-2021 Wingify Software Pvt. Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,8 +260,6 @@ namespace VWOSdk.Tests
             Assert.Equal(100, vwoClientBatchNull.getBatchEventQueue().eventsPerRequest);
             Assert.Equal(600, vwoClientBatchNull.getBatchEventQueue().requestTimeInterval);
             Assert.IsType<VWO>(vwoClientBatchNull);
-
-
             //"Event batching Queue should be defined if batchEventsData cross the limits"
             BatchEventData batchDataLimitCheck = new BatchEventData();
             batchDataLimitCheck.EventsPerRequest = 6000;
@@ -274,12 +272,8 @@ namespace VWOSdk.Tests
             Assert.Equal(100, vwoClientBatchLimit.getBatchEventQueue().eventsPerRequest);
             Assert.Equal(600, vwoClientBatchLimit.getBatchEventQueue().requestTimeInterval);
             Assert.IsType<VWO>(vwoClientBatchLimit);
-
-
-
             mockSettingProcessor.Verify(mock => mock.ProcessAndBucket(It.IsAny<Settings>()), Times.Exactly(5));
             mockSettingProcessor.Verify(mock => mock.ProcessAndBucket(It.Is<Settings>(val => ReferenceEquals(val, validSettings))), Times.Exactly(5));
-
            
         }
         [Fact]

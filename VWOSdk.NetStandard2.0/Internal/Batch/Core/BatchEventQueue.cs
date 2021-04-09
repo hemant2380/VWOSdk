@@ -1,4 +1,23 @@
-﻿using System;
+﻿
+#pragma warning disable 1587
+/**
+ * Copyright 2019-2021 Wingify Software Pvt. Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#pragma warning restore 1587
+
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
@@ -7,10 +26,12 @@ using System.Timers;
 
 namespace VWOSdk
 {
-
+    /// <summary>
+    /// Used for Event Batching . 
+    /// </summary> 
     public class BatchEventQueue
     {
-        public const int MAX_EVENTS_PER_REQUEST = 5000;
+        internal const int MAX_EVENTS_PER_REQUEST = 5000;
 
         internal Queue<IDictionary<string, dynamic>> batchQueue = new Queue<IDictionary<string, dynamic>>();
         private static readonly Dictionary<string, int> queueMetaData = new Dictionary<string, int>();
@@ -24,38 +45,45 @@ namespace VWOSdk
         private bool isBatchProcessing = false;
 
         private static readonly string file = typeof(BatchEventQueue).FullName;
-
-
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        public BatchEventQueue(BatchEventData batchEvents, string apikey, int accountId, bool isDevelopmentMode)
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+        internal BatchEventQueue(BatchEventData batchEvents, string apikey, int accountId, bool isDevelopmentMode)
         {
 
             if (batchEvents != null)
             {
-                if (batchEvents.RequestTimeInterval > 1 && batchEvents.RequestTimeInterval!=null)
+                if (batchEvents.RequestTimeInterval != null)
                 {
-                    this.requestTimeInterval = (int)batchEvents.RequestTimeInterval;
+                    if (batchEvents.RequestTimeInterval > 1)
+                    {
+                        this.requestTimeInterval = (int)batchEvents.RequestTimeInterval;
+                    }
+                    else
+                    {
+                        LogDebugMessage.RequestTimeIntervalOutOfBound(file, 1, 600);
+
+                    }
                 }
                 else
                 {
-                    LogDebugMessage.RequestTimeIntervalOutOfBound(file, 1, batchEvents.RequestTimeInterval ==null ? 
-                        0:(int)batchEvents.RequestTimeInterval);
+                    LogDebugMessage.RequestTimeIntervalOutOfBound(file, 1, 600);
 
                 }
-
-                if (batchEvents.EventsPerRequest > 0 && batchEvents.EventsPerRequest <= MAX_EVENTS_PER_REQUEST 
-                    && batchEvents.EventsPerRequest !=null)
+                if (batchEvents.EventsPerRequest != null)
                 {
-                    this.eventsPerRequest = Math.Min((int)batchEvents.EventsPerRequest, MAX_EVENTS_PER_REQUEST);
+
+                    if (batchEvents.EventsPerRequest > 0 && batchEvents.EventsPerRequest <= MAX_EVENTS_PER_REQUEST)
+                    {
+                        this.eventsPerRequest = Math.Min((int)batchEvents.EventsPerRequest, MAX_EVENTS_PER_REQUEST);
+                    }
+                    else
+                    {
+                        LogDebugMessage.EventsPerRequestOutOfBound(file, 1, MAX_EVENTS_PER_REQUEST, eventsPerRequest);
+                    }
                 }
                 else
                 {
-                    LogDebugMessage.EventsPerRequestOutOfBound(file, 1, MAX_EVENTS_PER_REQUEST, eventsPerRequest);
-
+                    LogDebugMessage.EventsPerRequestOutOfBound(file, 1, MAX_EVENTS_PER_REQUEST, 100);
 
                 }
-
                 if (batchEvents.FlushCallback != null)
                 {
                     this.flushCallback = batchEvents.FlushCallback;
@@ -63,32 +91,29 @@ namespace VWOSdk
 
             }
 
-
-
             this.accountId = accountId;
             this.isDevelopmentMode = isDevelopmentMode;
             this.apikey = apikey;
         }
 
 
-
         /// <summary>
         /// Add Events In a Queue Memory.
         /// </summary>
-        /// <param name="@event">Collection value returns from getBatchEventForTrackingGoal .</param>
-        public void addInQueue(IDictionary<string, dynamic> @event)
+        /// <param name="eventData">Collection value returns from getBatchEventForTrackingGoal .</param>
+        public void addInQueue(IDictionary<string, dynamic> eventData)
         {
             if (isDevelopmentMode)
             {
                 return;
             }
 
-            batchQueue.Enqueue(@event);
+            batchQueue.Enqueue(eventData);
 
-            if (@event.ContainsKey("eT"))
+            if (eventData.ContainsKey("eT"))
             {
-                int eT = @event.ContainsKey("eT") ? (int)@event["eT"] : 0;
-                addEventCount(eT);
+                int eT = (int)eventData["eT"];
+                addEventCount(eT); LogInfoMessage.ImpressionSuccessQueue(file);
             }
 
 
@@ -98,7 +123,7 @@ namespace VWOSdk
             }
             if (eventsPerRequest == batchQueue.Count)
             {
-                flush(true);
+                flush(false);
             }
         }
 
@@ -109,22 +134,44 @@ namespace VWOSdk
         public bool flush(bool manual)
         {
             if (batchQueue.Count == 0)
+            {              
+                LogDebugMessage.EventQueueEmpty(file);
+            }
+            if (manual)
+            {
+                if (batchQueue.Count > 0)
+                {
+                    LogDebugMessage.BeforeFlushing(file, "manually", batchQueue.Count.ToString(), accountId.ToString(),  "Timer will be cleared and registered again" , batchQueue.ToString());
+                    Task<bool> response = sendPostCall();           
+                    LogDebugMessage.AfterFlushing(file, "manually", batchQueue.Count.ToString(), batchQueue.ToString());
+                    disposeData();
+                    return response.Result;
+                }
+                clearRequestTimer();
+                return true;
+            }
+            else
             {
 
+                if (batchQueue.Count > 0 && !isBatchProcessing)
+                {
+                    isBatchProcessing = true;
+                    LogDebugMessage.BeforeFlushing(file,"", batchQueue.Count.ToString(), accountId.ToString(), "" , batchQueue.ToString());
+                    Task<bool> response = sendPostCall();
+                    LogDebugMessage.AfterFlushing(file, "", batchQueue.Count.ToString(), batchQueue.ToString());
+                    disposeData();
+                    return response.Result;
+                }
+                clearRequestTimer();
+                return true;
             }
-            if (batchQueue.Count > 0 && !isBatchProcessing)
-            {
-                isBatchProcessing = true;
-
-                Task<bool> response = sendPostCall(manual);
-                disposeData();
-                return response.Result;
-            }
-            clearRequestTimer();
-            return true;
         }
 
-        public void createNewBatchTimer()
+        /// <summary>
+        /// Create New Batch Timer
+        /// </summary>
+
+        private void createNewBatchTimer()
         {
             timer = new Timer();
             timer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
@@ -132,13 +179,21 @@ namespace VWOSdk
             timer.Enabled = true;
         }
 
-        // Specify what you want to happen when the Elapsed event is raised.
+
+        /// <summary>
+        /// Specify what you want to happen when the Elapsed event is raised.
+        /// </summary>
+        /// <param name="source">Timer object</param>
+        /// <param name="e">Timer Elapsed EventArgs</param>
         private void OnTimedEvent(object source, ElapsedEventArgs e)
         {
-            flush(true);
+            flush(false);
         }
+        /// <summary>
+        /// Clear Request Timer. Called After Flush Event.
+        /// </summary>
 
-        public void clearRequestTimer()
+        private void clearRequestTimer()
         {
             if (timer != null)
             {
@@ -148,93 +203,75 @@ namespace VWOSdk
             }
         }
 
-
-        public bool flushAndClearInterval()
-        {
-            disposeData();
-            return true;
-        }
-
-
         /// <summary>
         /// Async Post Called When RequestTimeInterval or EventsPerRequest Satisfied.
         /// </summary>
-        /// <param name="sendAsyncRequest">Accept true or false . Send a POST request as an asynchronous operation </param>
-        private async Task<bool> sendPostCall(bool sendAsyncRequest)
+       
+        private async Task<bool> sendPostCall()
         {
-            if (sendAsyncRequest)
+            try
             {
-                try
+
+                string PayLoad = HttpRequestBuilder.GetJsonString(this.batchQueue);
+                var ApiRequest = ServerSideVerb.EventBatchingUri(this.accountId, this.isDevelopmentMode);
+
+                HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Authorization", this.apikey);
+                var data = new StringContent(PayLoad, Encoding.UTF8, "application/json");
+                
+                HttpResponseMessage response = await httpClient.PostAsync(ApiRequest.Uri, data);
+                response.EnsureSuccessStatusCode();
+                if (response.StatusCode == System.Net.HttpStatusCode.OK && response.StatusCode < System.Net.HttpStatusCode.Ambiguous)
                 {
 
-                    string PayLoad = HttpRequestBuilder.getBatchEventPostCallParams(this.batchQueue);
-                    var ApiRequest = ServerSideVerb.EventBatchingUri(this.accountId, this.isDevelopmentMode);
-
-                    HttpClient httpClient = new HttpClient();
-
-                    httpClient.DefaultRequestHeaders.Add("Authorization", this.apikey);
-
-                    var data = new StringContent(PayLoad, Encoding.UTF8, "application/json");
-
-                    HttpResponseMessage response = await httpClient.PostAsync(ApiRequest.Uri, data);
-                    response.EnsureSuccessStatusCode();
-
-
-
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK && response.StatusCode < System.Net.HttpStatusCode.Ambiguous)
+                    if (flushCallback != null)
                     {
-
-                        if (flushCallback != null)
-                        {
-                            flushCallback.onFlush("Valid call", PayLoad);
-                        }
+                        flushCallback.onFlush("Valid call", PayLoad);
                     }
-                    else if (response.StatusCode == System.Net.HttpStatusCode.RequestEntityTooLarge)
-                    {
-
-                        if (flushCallback != null)
-                        {
-                            flushCallback.onFlush("Payload size too large", PayLoad);
-                        }
-                    }
-                    else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
-                    {
-
-                        if (flushCallback != null)
-                        {
-                            flushCallback.onFlush("Account id not found, no request app id found, or invalid API key", PayLoad);
-                        }
-                    }
-                    else
-                    {
-
-                        if (flushCallback != null)
-                        {
-                            flushCallback.onFlush("Invalid call", PayLoad);
-                        }
-                    }
-
-
-                    return ReferenceEquals(response.StatusCode, null);
-
+                    return true;
                 }
-                catch (HttpRequestException)
+                else if (response.StatusCode == System.Net.HttpStatusCode.RequestEntityTooLarge)
                 {
 
+                    if (flushCallback != null)
+                    {
+                        flushCallback.onFlush("Payload size too large", PayLoad);
+                    }
+                    return false;
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    if (flushCallback != null)
+                    {
+                        flushCallback.onFlush("Account id not found, no request app id found, or invalid API key", PayLoad);
+                    }
+                    return false;
+                }
+                else
+                {
+
+                    if (flushCallback != null)
+                    {
+                        flushCallback.onFlush("Invalid call", PayLoad);
+                    }
                     return false;
                 }
             }
-            else
+            catch (HttpRequestException ex)
             {
+
+                LogErrorMessage.UnableToDisplayHttpRequest(file, ex.StackTrace);
                 return false;
             }
+
         }
 
 
         /// <summary>
-        /// Count RequestTimeInterval or EventsPerRequest.
+        /// Add Events To Queue..
         /// </summary>
         /// <param name="eventType">Track=1 , Goal=2 , Push=3 </param>
+
 
         private void addEventCount(int eventType)
         {
@@ -242,7 +279,7 @@ namespace VWOSdk
             {
                 if (queueMetaData.ContainsKey("visitorEvents"))
                 {
-                    int visitorEvents = queueMetaData.ContainsKey("visitorEvents") ? queueMetaData["visitorEvents"] : 0;
+                    int visitorEvents = queueMetaData["visitorEvents"];
                     queueMetaData["visitorEvents"] = visitorEvents + 1;
                 }
                 else
@@ -250,11 +287,11 @@ namespace VWOSdk
                     queueMetaData["visitorEvents"] = 1;
                 }
             }
-            if (eventType == (int)EVENT_TYPES.TRACK_GOAL)
+            else if (eventType == (int)EVENT_TYPES.TRACK_GOAL)
             {
                 if (queueMetaData.ContainsKey("goalEvents"))
                 {
-                    int goalEvents = queueMetaData.ContainsKey("goalEvents") ? queueMetaData["goalEvents"] : 0;
+                    int goalEvents = queueMetaData["goalEvents"];
                     queueMetaData["goalEvents"] = goalEvents + 1;
 
                 }
@@ -263,11 +300,11 @@ namespace VWOSdk
                     queueMetaData["goalEvents"] = 1;
                 }
             }
-            if (eventType == (int)EVENT_TYPES.PUSH)
+            else if (eventType == (int)EVENT_TYPES.PUSH)
             {
                 if (queueMetaData.ContainsKey("pushEvents"))
                 {
-                    int pushEvents = queueMetaData.ContainsKey("pushEvents") ? queueMetaData["pushEvents"] : 0;
+                    int pushEvents = queueMetaData["pushEvents"];
                     queueMetaData["pushEvents"] = pushEvents + 1;
 
                 }
@@ -278,6 +315,9 @@ namespace VWOSdk
             }
         }
 
+        /// <summary>
+        /// Clear Batch Queue. Queue MetaData and Request Timer.
+        /// </summary>
         private void disposeData()
         {
             batchQueue.Clear();
@@ -285,12 +325,13 @@ namespace VWOSdk
             clearRequestTimer();
         }
 
-        public Queue<IDictionary<string, dynamic>> BatchQueue()
-        {
-           
-                return this.batchQueue;
-            
-        }
+
+        /// <summary>
+        /// Used for Unit Test
+        /// </summary>
+        /// <returns>
+        /// Queue count.       
+        /// </returns>
         public int BatchQueueCount()
         {
 

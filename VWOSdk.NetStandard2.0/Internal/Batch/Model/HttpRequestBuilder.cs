@@ -1,5 +1,22 @@
 ﻿
 
+#pragma warning disable 1587
+/**
+ * Copyright 2019-2021 Wingify Software Pvt. Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#pragma warning restore 1587
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -7,23 +24,22 @@ using System.Collections.Generic;
 namespace VWOSdk
 {
 
-
-
-    public class HttpRequestBuilder
+    internal class HttpRequestBuilder
     {
-        //Batch Tracking Events
 
-        public static IDictionary<string, dynamic> getBatchEventForTrackingUser(long accountId, int campaignId, int variationId, string userId,  bool isDevelopmentMode)
+        /// <summary>
+        /// Params For Tracking User. 
+        /// </summary>
+        public static IDictionary<string, dynamic> EventForTrackingUser(long accountId, int campaignId, int variationId, string userId,  bool isDevelopmentMode)
         {
 
             BuildQueryParams requestParams =
             BuildQueryParams.Builder.getInstance()
                     .withMinifiedCampaignId(campaignId)
                     .withMinifiedVariationId(variationId)
-                    .withMinifiedEventType(1)
+                    .withMinifiedEventType((int)EVENT_TYPES.TRACK_USER)
                     .withSid(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-                    .withUuid(accountId, userId)
-                   // .withsdkVersion()              
+                    .withUuid(accountId, userId)                    
                     .build();
            
             IDictionary<string, dynamic> map = requestParams.removeNullValues(requestParams);
@@ -32,12 +48,10 @@ namespace VWOSdk
            
             return map;
         }
-
-
-        //Batch Goal Events
-
-
-        public static IDictionary<string, dynamic> getBatchEventForTrackingGoal(long accountId, int campaignId, int variationId, string userId,
+        /// <summary>
+        /// Params For Tracking Goal. 
+        /// </summary>
+        public static IDictionary<string, dynamic> EventForTrackingGoal(long accountId, int campaignId, int variationId, string userId,
             int goalId,  string revenueValue, bool isDevelopmentMode)
         {
            
@@ -45,28 +59,26 @@ namespace VWOSdk
             BuildQueryParams requestParams = BuildQueryParams.Builder.getInstance()
                 .withMinifiedCampaignId(campaignId)
                 .withMinifiedVariationId(variationId)
-                .withMinifiedEventType(2)
+                .withMinifiedEventType((int)EVENT_TYPES.TRACK_GOAL)
                 .withMinifiedGoalId(goalId)
-                // .withRevenue(revenueValue)
+                .withRevenue(revenueValue)
                 .withSid(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 .withUuid(accountId, userId)
-               // .withsdkVersion()
+              
                 .build();
          
             IDictionary<string, dynamic> map = requestParams.removeNullValues(requestParams);       
             return map;
         }
-
-
-
-        //Batch Push Events
-
-        public static IDictionary<string, dynamic> getBatchEventForPushTags(long accountId, string tagKey, string tagValue, string userId, bool isDevelopmentMode)
+        /// <summary>
+        /// Params For Push Tags. 
+        /// </summary>
+        public static IDictionary<string, dynamic> EventForPushTags(long accountId, string tagKey, string tagValue, string userId, bool isDevelopmentMode)
         {
 
             BuildQueryParams requestParams =
             BuildQueryParams.Builder.getInstance()
-                    .withMinifiedEventType(3)
+                    .withMinifiedEventType((int)EVENT_TYPES.PUSH)
                     .withMinifiedTags(tagKey, tagValue)
                     .withSid(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                     .withUuid(accountId, userId)
@@ -76,12 +88,14 @@ namespace VWOSdk
         }
 
 
-        
 
-        //Generate Event Batching Post Call Params
-        public static string getBatchEventPostCallParams( Queue<IDictionary<string, dynamic>> properties )
+
+        /// <summary>
+        ///Convert Queue data As Json String. 
+        /// </summary>
+        public static string GetJsonString( Queue<IDictionary<string, dynamic>> batchQueue)
         {
-            string jsonString = JsonConvert.SerializeObject(properties);
+            string jsonString = JsonConvert.SerializeObject(batchQueue);
             jsonString = "{\"ev\":" + jsonString + "}";
 
             return jsonString;
