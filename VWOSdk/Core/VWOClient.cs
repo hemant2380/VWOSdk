@@ -93,12 +93,12 @@ namespace VWOSdk
                 {
                     if (this._BatchEventData != null)
                     {
-                        //add in queue
+                        LogDebugMessage.EventBatchingActivated(typeof(IVWOClient).FullName, nameof(Activate));
                         this._BatchEventQueue.addInQueue(HttpRequestBuilder.EventForTrackingUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode));
                     }
                     else
                     {
-                        //Batch event not enabled
+                        LogDebugMessage.EventBatchingNotActivated(typeof(IVWOClient).FullName, nameof(Activate));
                         var trackUserRequest = ServerSideVerb.TrackUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode);
                         trackUserRequest.ExecuteAsync();
                     }
@@ -232,12 +232,13 @@ namespace VWOSdk
                         {
                             if (this._BatchEventData != null)
                             {
-                                //add in queue
+                                LogDebugMessage.EventBatchingActivated(typeof(IVWOClient).FullName, nameof(Track));
                                 this._BatchEventQueue.addInQueue(HttpRequestBuilder.EventForTrackingGoal(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id,
                                 userId, assignedVariation.Goal.Id, revenueValue, this._isDevelopmentMode));
                             }
                             else
                             {
+                                LogDebugMessage.EventBatchingNotActivated(typeof(IVWOClient).FullName, nameof(Track));
                                 var trackGoalRequest = ServerSideVerb.TrackGoal(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, assignedVariation.Goal.Id, revenueValue, this._isDevelopmentMode);
                                 trackGoalRequest.ExecuteAsync();
                             }
@@ -363,11 +364,12 @@ namespace VWOSdk
 
                             if (this._BatchEventData != null)
                             {
-                                //add in queue
+                                LogDebugMessage.EventBatchingActivated(typeof(IVWOClient).FullName, nameof(IsFeatureEnabled));
                                 this._BatchEventQueue.addInQueue(HttpRequestBuilder.EventForTrackingUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode));
                             }
                             else
                             {
+                                LogDebugMessage.EventBatchingNotActivated(typeof(IVWOClient).FullName, nameof(IsFeatureEnabled));
                                 var trackUserRequest = ServerSideVerb.TrackUser(this._settings.AccountId, assignedVariation.Campaign.Id, assignedVariation.Variation.Id, userId, this._isDevelopmentMode);
                                 trackUserRequest.ExecuteAsync();
                             }
@@ -487,12 +489,14 @@ namespace VWOSdk
                 }
                 if (this._BatchEventData != null)
                 {
-                    //add in event queue
+                   
+                    LogDebugMessage.EventBatchingActivated(typeof(IVWOClient).FullName,nameof(Push));
                     this._BatchEventQueue.addInQueue(HttpRequestBuilder.EventForPushTags(this._settings.AccountId, tagKey, tagValue, userId, this._isDevelopmentMode));
 
                 }
                 else
                 {
+                    LogDebugMessage.EventBatchingNotActivated(typeof(IVWOClient).FullName, nameof(Push));
                     var pushRequest = ServerSideVerb.PushTags(this._settings, tagKey, tagValue, userId, this._isDevelopmentMode);
                     pushRequest.ExecuteAsync();
                 }
@@ -512,9 +516,9 @@ namespace VWOSdk
         public bool flushEvent(bool manual)
         {
             bool response = false;
-            if (manual)
+            if (manual && _BatchEventQueue !=null)
             {
-                response = this._BatchEventQueue.flush(true);
+                response = _BatchEventQueue.flush(true);
 
             }
             return response;

@@ -35,6 +35,11 @@ namespace VWOSdk
         {
             Log.Info($"({file}): Looked into UserStorageService for userId:{userId} and campaign test key: {campaignKey} successful");
         }
+        public static void ReturnUserStorageData(string file, string userId, string campaignKey)
+        {
+            Log.Info($"({file}): Looked into UserStorageData for userId:{userId} and campaign test key: {campaignKey} successful");
+        }
+       
         public static void SavingDataUserStorageService(string file, string userId)
         {
             Log.Info($"({file}): Saving into UserStorageService for userId:{userId} successful");

@@ -79,20 +79,24 @@ namespace VWOSdk
                         {
                             string jsonString = JsonConvert.SerializeObject(userStorageData);
                             var allValue = JsonConvert.DeserializeObject<UserStorageMap>(jsonString);
+                            LogInfoMessage.ReturnUserStorageData(file, userStorageData["userId"], userStorageData["campaignKey"]);
                             return allValue;
                         }
                         else
                         {
+                           
                             return this._userStorageService.Get(userId, campaignKey);
                         }
                     }                   
                     else
                     {
+                       
                         return this._userStorageService.Get(userId, campaignKey);
                     }
                 }
                 else
                 {
+                  
                     return this._userStorageService.Get(userId, campaignKey);
                 }
             }

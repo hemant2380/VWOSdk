@@ -118,7 +118,14 @@ namespace VWOSdk
         }
         //REQUEST_TIME_INTERVAL_OUT_OF_BOUNDS("requestTimeInterval should be > {{min_value}}. Assigning it the default value i.e {{default_value}} seconds");
         // EVENTS_PER_REQUEST_OUT_OF_BOUNDS("eventsPerRequest should be > {{min_value}} and <= {{max_value}}. Assigning it the default value i.e {{default_value}}")
-
+        public static void EventBatchingNotActivated(string file,string function)
+        {
+            Log.Debug($"({file}): Event batching is not activated for {function}  or send null");
+        }
+        public static void EventBatchingActivated(string file, string function)
+        {
+            Log.Debug($"({file}): Event added in queue for {function}");
+        }
         public static void EventQueueEmpty(string file)
         {
             Log.Debug($"({file}): Event Batching queue is empty");
