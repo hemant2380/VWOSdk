@@ -89,6 +89,10 @@ namespace VWOSdk
         {
             Log.Debug($"({file}): impression built for track-user - {properties}");
         }
+        public static void ImpressionForBatchEvent(string file, string properties)
+        {
+            Log.Debug($"({file}): impression built for track-user - {properties}");
+        }
         public static void ImpressionForTrackGoal(string file, string properties)
         {
             Log.Debug($"({file}): impression built for track-goal - {properties}");

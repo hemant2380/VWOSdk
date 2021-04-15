@@ -38,7 +38,7 @@ namespace VWOSdk
         {
             return default(T);
         }
-
+        
         public async Task<byte[]> ExecuteAsync(ApiRequest apiRequest)
         {
             if (apiRequest == null)
@@ -66,7 +66,7 @@ namespace VWOSdk
             }
             return null;
         }
-
+      
         private async Task<T> ExecuteAsync<T>(ApiRequest apiRequest)
         {
             try {
@@ -78,7 +78,7 @@ namespace VWOSdk
             }
             return default(T);
         }
-
+     
         private static T Deserialize<T>(byte[] byteContent)
         {
             if (byteContent != null)
@@ -95,5 +95,7 @@ namespace VWOSdk
             }
             return default(T);
         }
+      
+       
     }
 }

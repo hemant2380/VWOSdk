@@ -68,7 +68,8 @@ namespace VWOSdk
         }
 
         //Event Batching
-        internal static ApiRequest EventBatchingUri(long accountId, bool isDevelopmentMode)
+        internal static ApiRequest EventBatching(long accountId, bool isDevelopmentMode
+            )
         {
             string queryParams = GetQueryParamertersForEventBatching(accountId);
             var trackUserRequest = new ApiRequest(Method.POST, isDevelopmentMode)
@@ -76,7 +77,7 @@ namespace VWOSdk
                 Uri = new Uri($"{Host}/{Verb}/{BatchEventVerb}?{queryParams}"),
             };
           
-            LogDebugMessage.ImpressionForTrackUser(file, queryParams);
+            LogDebugMessage.ImpressionForBatchEvent(file, queryParams);
             return trackUserRequest;
         }
         private static string GetQueryParamertersForEventBatching(long accountId)

@@ -68,6 +68,12 @@ namespace VWOSdk
         {
             Log.Info($"({file}): Impression event - {endPoint} was successfully received by VWO.");
         }
+
+        public static void PostImpressionSuccess(string file, string endPoint)
+        {
+            Log.Info($"({file}): Impression batch event - {endPoint} was successfully received by VWO.");
+        }
+
         public static void RetryFailedImpressionAfterDelay(string file, string endPoint, string retryTimeout)
         {
             Log.Info($"({file}): Failed impression event for {endPoint} will be retried after {retryTimeout} milliseconds delay");

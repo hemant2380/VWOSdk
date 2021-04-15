@@ -505,18 +505,16 @@ namespace VWOSdk
             return false;
         }
         /// <summary>
-        /// Makes a call to our server to flush Events
-        /// </summary>
-        /// <param name="manual"> A boolean value . True , If flashEvent called by user</param>       
+        /// Makes a call to our server to flush Events   
         /// <returns>
         /// A boolean value based on whether the impression was made to the VWO server.
         /// True, if an impression event is successfully being made to the VWO server.
         /// False, when unexpected error comes and no impression call is made to the VWO server.
         /// </returns>
-        public bool flushEvent(bool manual)
+        public bool flushEvent()
         {
             bool response = false;
-            if (manual && _BatchEventQueue !=null)
+            if (_BatchEventQueue !=null)
             {
                 response = _BatchEventQueue.flush(true);
 

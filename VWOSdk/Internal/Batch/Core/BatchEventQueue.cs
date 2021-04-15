@@ -20,6 +20,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -58,13 +59,13 @@ namespace VWOSdk
                     }
                     else
                     {
-                        LogDebugMessage.RequestTimeIntervalOutOfBound(file, 1, 600);
+                        LogDebugMessage.RequestTimeIntervalOutOfBound(file, 1, requestTimeInterval);
 
                     }
                 }
                 else
                 {
-                    LogDebugMessage.RequestTimeIntervalOutOfBound(file, 1, 600);
+                    LogDebugMessage.RequestTimeIntervalOutOfBound(file, 1, requestTimeInterval);
 
                 }
                 if (batchEvents.EventsPerRequest != null)
@@ -81,7 +82,7 @@ namespace VWOSdk
                 }
                 else
                 {
-                    LogDebugMessage.EventsPerRequestOutOfBound(file, 1, MAX_EVENTS_PER_REQUEST, 100);
+                    LogDebugMessage.EventsPerRequestOutOfBound(file, 1, MAX_EVENTS_PER_REQUEST, eventsPerRequest);
 
                 }
                 if (batchEvents.FlushCallback != null)
@@ -100,7 +101,7 @@ namespace VWOSdk
         /// <summary>
         /// Add Events In a Queue Memory.
         /// </summary>
-        /// <param name="eventData">Collection value returns from getBatchEventForTrackingGoal .</param>
+        /// <param name="eventData"> Collection value returns from HttpRequestBuilder .</param>
         public void addInQueue(IDictionary<string, dynamic> eventData)
         {
             if (isDevelopmentMode)
@@ -113,7 +114,8 @@ namespace VWOSdk
             if (eventData.ContainsKey("eT"))
             {
                 int eT = (int)eventData["eT"];
-                addEventCount(eT); LogInfoMessage.ImpressionSuccessQueue(file);
+                addEventCount(eT); 
+                LogInfoMessage.ImpressionSuccessQueue(file);
             }
 
 
@@ -142,7 +144,7 @@ namespace VWOSdk
                 if (batchQueue.Count > 0)
                 {
                     LogDebugMessage.BeforeFlushing(file, "manually", batchQueue.Count.ToString(), accountId.ToString(),  "Timer will be cleared and registered again" , batchQueue.ToString());
-                    Task<bool> response = sendPostCall();           
+                    Task<bool> response = sendPostCall();
                     LogDebugMessage.AfterFlushing(file, "manually", batchQueue.Count.ToString(), batchQueue.ToString());
                     disposeData();
                     return response.Result;
@@ -206,24 +208,24 @@ namespace VWOSdk
         /// <summary>
         /// Async Post Called When RequestTimeInterval or EventsPerRequest Satisfied.
         /// </summary>
-       
+      
         private async Task<bool> sendPostCall()
         {
             try
             {
 
                 string PayLoad = HttpRequestBuilder.GetJsonString(this.batchQueue);
-                var ApiRequest = ServerSideVerb.EventBatchingUri(this.accountId, this.isDevelopmentMode);
+                var ApiRequest = ServerSideVerb.EventBatching(this.accountId, this.isDevelopmentMode);
 
                 HttpClient httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Accept.Clear();
                 httpClient.DefaultRequestHeaders.Add("Authorization", this.apikey);
+                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 var data = new StringContent(PayLoad, Encoding.UTF8, "application/json");
-                
                 HttpResponseMessage response = await httpClient.PostAsync(ApiRequest.Uri, data);
                 response.EnsureSuccessStatusCode();
                 if (response.StatusCode == System.Net.HttpStatusCode.OK && response.StatusCode < System.Net.HttpStatusCode.Ambiguous)
                 {
-
                     if (flushCallback != null)
                     {
                         flushCallback.onFlush("Valid call", PayLoad);
@@ -232,7 +234,6 @@ namespace VWOSdk
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.RequestEntityTooLarge)
                 {
-
                     if (flushCallback != null)
                     {
                         flushCallback.onFlush("Payload size too large", PayLoad);
@@ -249,13 +250,13 @@ namespace VWOSdk
                 }
                 else
                 {
-
-                    if (flushCallback != null)
+                   if (flushCallback != null)
                     {
                         flushCallback.onFlush("Invalid call", PayLoad);
                     }
                     return false;
                 }
+
             }
             catch (HttpRequestException ex)
             {

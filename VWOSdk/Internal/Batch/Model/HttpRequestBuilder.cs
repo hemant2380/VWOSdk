@@ -35,6 +35,8 @@ namespace VWOSdk
 
             BuildQueryParams requestParams =
             BuildQueryParams.Builder.getInstance()
+                     //.withAp()
+                     //.withEd()
                     .withMinifiedCampaignId(campaignId)
                     .withMinifiedVariationId(variationId)
                     .withMinifiedEventType((int)EVENT_TYPES.TRACK_USER)
@@ -57,14 +59,15 @@ namespace VWOSdk
            
 
             BuildQueryParams requestParams = BuildQueryParams.Builder.getInstance()
+                  // .withAp()
+                    // .withEd()
                 .withMinifiedCampaignId(campaignId)
                 .withMinifiedVariationId(variationId)
                 .withMinifiedEventType((int)EVENT_TYPES.TRACK_GOAL)
                 .withMinifiedGoalId(goalId)
                 .withRevenue(revenueValue)
                 .withSid(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-                .withUuid(accountId, userId)
-              
+                .withUuid(accountId, userId)             
                 .build();
          
             IDictionary<string, dynamic> map = requestParams.removeNullValues(requestParams);       
@@ -78,6 +81,8 @@ namespace VWOSdk
 
             BuildQueryParams requestParams =
             BuildQueryParams.Builder.getInstance()
+              // .withAp()
+                   //  .withEd()
                     .withMinifiedEventType((int)EVENT_TYPES.PUSH)
                     .withMinifiedTags(tagKey, tagValue)
                     .withSid(DateTimeOffset.UtcNow.ToUnixTimeSeconds())

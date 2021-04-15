@@ -141,14 +141,12 @@ namespace VWOSdk
         bool Push(string tagKey, dynamic tagValue, string userId);
         /// <summary>
         /// Makes a call to our server to flush Events
-        /// </summary>
-        /// <param name="manual"> A boolean value . True , If flashEvent called by user</param>       
-        /// <returns>
+    
         /// A boolean value based on whether the impression was made to the VWO server.
         /// True, if an impression event is successfully being made to the VWO server.
         /// False, when unexpected error comes and no impression call is made to the VWO server.
         /// </returns>
-        bool flushEvent(bool manual);
+        bool flushEvent();
        
         /// <summary>
         /// Used for Unit Test

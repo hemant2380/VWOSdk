@@ -32,11 +32,14 @@ namespace VWOSdk
         public object r;
         public long sId;
         public string t;
+       
         public int? e = null;
         public int? c = null;
         public int eT;
       
         public int? g = null;
+        public string ap;
+        public string ed;
         public BuildQueryParams(Builder builder)
         {           
             this.u = builder.u;         
@@ -47,7 +50,9 @@ namespace VWOSdk
             this.c = builder.c;
             this.eT = builder.eT;
             this.g = builder.g;
-         
+            this.ap = builder.ap;
+            this.ed = builder.ed;
+
         }
 
 
@@ -60,16 +65,29 @@ namespace VWOSdk
             public int? e = null;
             public int? c = null;
             public int eT;          
-            public int? g = null;           
+            public int? g = null; 
+             public string ap;
+        public string ed;
             public Builder withMinifiedCampaignId(int campaignId)
             {
                 this.e = campaignId;
                 return this;
             }         
-            private static double GetRandomNumber()
+            //private static double GetRandomNumber()
+            //{
+            //    Random random = new Random();
+            //    return random.NextDouble();
+            //}
+            public Builder withAp()
             {
-                Random random = new Random();
-                return random.NextDouble();
+                this.ap = "server";
+                return this;
+            }
+
+            public Builder withEd()
+            {
+                this.ed = "{\"p\":\"server\"}";
+                return this;
             }
             public Builder withUuid(long account_id, string uId)
             {

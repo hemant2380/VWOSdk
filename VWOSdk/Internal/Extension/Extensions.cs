@@ -30,13 +30,17 @@ namespace VWOSdk
         private static Dictionary<Method, HttpMethod> HttpMethodMap = new Dictionary<Method, HttpMethod>
         {
             { Method.GET, HttpMethod.Get },
+             { Method.POST, HttpMethod.Post },
         };
 
         public static HttpMethod GetHttpMethod(this Method method)
         {
             return HttpMethodMap[method];
         }
-
+        public static HttpMethod PostHttpMethod(this Method method)
+        {
+            return HttpMethodMap[method];
+        }
         public static bool IsLogTypeEnabled(this LogLevel specifiedLogLevel, LogLevel logLevel)
         {
             return logLevel <= specifiedLogLevel;
