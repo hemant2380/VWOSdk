@@ -101,10 +101,11 @@ namespace VWOSdk
         {
             Log.Error($"({file}): Impression event could not be sent to VWO - {endPoint}");
         }
-        public static void PostImpressionFailed(string file, string endPoint)
+        public static void BulkNotProcessed(string file)
         {
-            Log.Error($"({file}): Impression batch event could not be sent to VWO - {endPoint}");
+            Log.Error($"({file}): Batch events couldn't be received by VWO. Calling Flush Callback with error and data.");
         }
+
         internal static void TrackApiRevenueNotPassedForRevenueGoal(string file, string goalIdentifier, string campaignKey, string userId)
         {
             Log.Error($"({file}): Revenue value should be passed for revenue goal:{goalIdentifier} for campaign:{campaignKey} and userId:{userId}");

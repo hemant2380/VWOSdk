@@ -120,8 +120,7 @@ namespace VWOSdk
         {
             Log.Debug($"({file}): eventsPerRequest should be > {min_value.ToString()} and <= {max_value.ToString()}. Assigning it the default value i.e {default_value.ToString()}");
         }
-        //REQUEST_TIME_INTERVAL_OUT_OF_BOUNDS("requestTimeInterval should be > {{min_value}}. Assigning it the default value i.e {{default_value}} seconds");
-        // EVENTS_PER_REQUEST_OUT_OF_BOUNDS("eventsPerRequest should be > {{min_value}} and <= {{max_value}}. Assigning it the default value i.e {{default_value}}")
+       
         public static void EventBatchingNotActivated(string file,string function)
         {
             Log.Debug($"({file}): Event batching is not activated for {function}  or send null");
@@ -142,6 +141,10 @@ namespace VWOSdk
         {
             Log.Debug($"({file}): Events queue having {length} events has been flushed {manually}, queue summary: {queue_metadata}");
         }
-
+        public static void BatchEventLimitExceeded (string file, string endPoint, string accountId, string eventsPerRequest)
+        {
+            Log.Debug($"({file}): Impression event - {endPoint} failed due to exceeding payload size.Parameter eventsPerRequest in batchEvents config in launch API has value:{eventsPerRequest} for accountId:{accountId}. Please read the official documentation for knowing the size limits.");
+        }
+      
     }
 }

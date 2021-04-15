@@ -33,7 +33,6 @@ namespace VWOSdk
     public class BatchEventQueue
     {
         internal const int MAX_EVENTS_PER_REQUEST = 5000;
-
         internal Queue<IDictionary<string, dynamic>> batchQueue = new Queue<IDictionary<string, dynamic>>();
         private static readonly Dictionary<string, int> queueMetaData = new Dictionary<string, int>();
         internal int requestTimeInterval = 600; //default:- 10 * 60(secs) = 600 secs i.e. 10 minutes
@@ -44,11 +43,17 @@ namespace VWOSdk
         private readonly string apikey;
         private bool isDevelopmentMode;
         private bool isBatchProcessing = false;
-
         private static readonly string file = typeof(BatchEventQueue).FullName;
+
+        /// <summary>
+        /// Init variables in BatchEventQueue.
+        /// </summary>
+        /// <param name="batchEvents">BatchEventsData instance</param>
+        /// <param name="apikey">VWO application apikey</param>
+        /// <param name="accountId">VWO application accountId</param>
+        /// <param name="isDevelopmentMode">isDevelopmentMode Boolean value specifying development mode is on ir off</param>
         internal BatchEventQueue(BatchEventData batchEvents, string apikey, int accountId, bool isDevelopmentMode)
         {
-
             if (batchEvents != null)
             {
                 if (batchEvents.RequestTimeInterval != null)
@@ -91,17 +96,15 @@ namespace VWOSdk
                 }
 
             }
-
             this.accountId = accountId;
             this.isDevelopmentMode = isDevelopmentMode;
             this.apikey = apikey;
         }
-
-
         /// <summary>
-        /// Add Events In a Queue Memory.
+        /// Insert the event in the queue and flush if the queue is full.
         /// </summary>
-        /// <param name="eventData"> Collection value returns from HttpRequestBuilder .</param>
+        /// <param name="eventData"> event Map containing configs of the event</param>
+        ///       
         public void addInQueue(IDictionary<string, dynamic> eventData)
         {
             if (isDevelopmentMode)
@@ -114,7 +117,7 @@ namespace VWOSdk
             if (eventData.ContainsKey("eT"))
             {
                 int eT = (int)eventData["eT"];
-                addEventCount(eT); 
+                addEventCount(eT);
                 LogInfoMessage.ImpressionSuccessQueue(file);
             }
 
@@ -128,26 +131,26 @@ namespace VWOSdk
                 flush(false);
             }
         }
-
         /// <summary>
-        /// When queue data successfully posted in the Uri, flush method is called . This method initializes the timer and events queue. 
+        /// Flush the queue, clear timer and send POST network call to VWO servers.
         /// </summary>
-        /// <param name="manual">flash method can be called manually . If called manually , set it as true else false</param>
+        /// <param name="manual">manual Boolean specifying flush is triggered manual or not.</param>
+        /// <returns>Boolean value specifying flush was successful or not.</returns>       
         public bool flush(bool manual)
         {
             if (batchQueue.Count == 0)
-            {              
+            {
                 LogDebugMessage.EventQueueEmpty(file);
             }
             if (manual)
             {
                 if (batchQueue.Count > 0)
                 {
-                    LogDebugMessage.BeforeFlushing(file, "manually", batchQueue.Count.ToString(), accountId.ToString(),  "Timer will be cleared and registered again" , batchQueue.ToString());
+                    LogDebugMessage.BeforeFlushing(file, "manually", batchQueue.Count.ToString(), accountId.ToString(), "Timer will be cleared and registered again", batchQueue.ToString());
                     Task<bool> response = sendPostCall();
                     LogDebugMessage.AfterFlushing(file, "manually", batchQueue.Count.ToString(), batchQueue.ToString());
                     disposeData();
-                    return response.Result;
+                    return true;
                 }
                 clearRequestTimer();
                 return true;
@@ -158,21 +161,19 @@ namespace VWOSdk
                 if (batchQueue.Count > 0 && !isBatchProcessing)
                 {
                     isBatchProcessing = true;
-                    LogDebugMessage.BeforeFlushing(file,"", batchQueue.Count.ToString(), accountId.ToString(), "" , batchQueue.ToString());
+                    LogDebugMessage.BeforeFlushing(file, "", batchQueue.Count.ToString(), accountId.ToString(), "", batchQueue.ToString());
                     Task<bool> response = sendPostCall();
                     LogDebugMessage.AfterFlushing(file, "", batchQueue.Count.ToString(), batchQueue.ToString());
                     disposeData();
-                    return response.Result;
+                    return true;
                 }
                 clearRequestTimer();
                 return true;
             }
         }
-
         /// <summary>
-        /// Create New Batch Timer
+        /// Initialize a new Timer.
         /// </summary>
-
         private void createNewBatchTimer()
         {
             timer = new Timer();
@@ -180,8 +181,6 @@ namespace VWOSdk
             timer.Interval = requestTimeInterval * 1000L;
             timer.Enabled = true;
         }
-
-
         /// <summary>
         /// Specify what you want to happen when the Elapsed event is raised.
         /// </summary>
@@ -192,9 +191,8 @@ namespace VWOSdk
             flush(false);
         }
         /// <summary>
-        /// Clear Request Timer. Called After Flush Event.
+        ///  CLears the timer.
         /// </summary>
-
         private void clearRequestTimer()
         {
             if (timer != null)
@@ -204,32 +202,31 @@ namespace VWOSdk
                 isBatchProcessing = false;
             }
         }
-
         /// <summary>
-        /// Async Post Called When RequestTimeInterval or EventsPerRequest Satisfied.
+        /// Send Post network call to VWO servers.
         /// </summary>
-      
+        /// <returns>Boolean value specifying flush was successful or not.</returns>
         private async Task<bool> sendPostCall()
         {
+            string PayLoad = HttpRequestBuilder.GetJsonString(this.batchQueue);
+            var ApiRequest = ServerSideVerb.EventBatching(this.accountId, this.isDevelopmentMode);
+            HttpClient httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Accept.Clear();
+            httpClient.DefaultRequestHeaders.Add("Authorization", this.apikey);
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var data = new StringContent(PayLoad, Encoding.UTF8, "application/json");
             try
             {
-
-                string PayLoad = HttpRequestBuilder.GetJsonString(this.batchQueue);
-                var ApiRequest = ServerSideVerb.EventBatching(this.accountId, this.isDevelopmentMode);
-
-                HttpClient httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Accept.Clear();
-                httpClient.DefaultRequestHeaders.Add("Authorization", this.apikey);
-                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                var data = new StringContent(PayLoad, Encoding.UTF8, "application/json");
                 HttpResponseMessage response = await httpClient.PostAsync(ApiRequest.Uri, data);
                 response.EnsureSuccessStatusCode();
                 if (response.StatusCode == System.Net.HttpStatusCode.OK && response.StatusCode < System.Net.HttpStatusCode.Ambiguous)
                 {
+
                     if (flushCallback != null)
                     {
-                        flushCallback.onFlush("Valid call", PayLoad);
+                        flushCallback.onFlush(null, PayLoad);
                     }
+                    LogInfoMessage.ImpressionSuccess(file, ApiRequest.Uri.ToString());
                     return true;
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.RequestEntityTooLarge)
@@ -238,6 +235,9 @@ namespace VWOSdk
                     {
                         flushCallback.onFlush("Payload size too large", PayLoad);
                     }
+                    LogDebugMessage.BatchEventLimitExceeded(file, ApiRequest.Uri?.ToString(), this.accountId.ToString(), eventsPerRequest.ToString());
+                    LogErrorMessage.ImpressionFailed(file, ApiRequest.Uri?.ToString());
+
                     return false;
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
@@ -246,34 +246,38 @@ namespace VWOSdk
                     {
                         flushCallback.onFlush("Account id not found, no request app id found, or invalid API key", PayLoad);
                     }
+                    LogErrorMessage.BulkNotProcessed(file);
+                    LogErrorMessage.ImpressionFailed(file, ApiRequest.Uri?.ToString());
                     return false;
                 }
                 else
                 {
-                   if (flushCallback != null)
+                    LogErrorMessage.BulkNotProcessed(file);
+                    LogErrorMessage.ImpressionFailed(file, ApiRequest.Uri?.ToString());
+                    if (flushCallback != null)
                     {
                         flushCallback.onFlush("Invalid call", PayLoad);
                     }
+
                     return false;
                 }
 
             }
             catch (HttpRequestException ex)
             {
-
+                LogErrorMessage.BulkNotProcessed(file);
                 LogErrorMessage.UnableToDisplayHttpRequest(file, ex.StackTrace);
+                if (flushCallback != null)
+                {
+                    flushCallback.onFlush("HttpRequest Exception", PayLoad);
+                }
                 return false;
             }
-
         }
-
-
         /// <summary>
-        /// Add Events To Queue..
+        /// Increase the count of a particular event.
         /// </summary>
-        /// <param name="eventType">Track=1 , Goal=2 , Push=3 </param>
-
-
+        /// <param name="eventType">Type of the event .Track=1 , Goal=2 , Push=3 </param>
         private void addEventCount(int eventType)
         {
             if (eventType == (int)EVENT_TYPES.TRACK_USER)
@@ -317,7 +321,7 @@ namespace VWOSdk
         }
 
         /// <summary>
-        /// Clear Batch Queue. Queue MetaData and Request Timer.
+        /// clear the queues and reset the timer.
         /// </summary>
         private void disposeData()
         {
@@ -325,8 +329,6 @@ namespace VWOSdk
             queueMetaData.Clear();
             clearRequestTimer();
         }
-
-
         /// <summary>
         /// Used for Unit Test
         /// </summary>
@@ -335,11 +337,7 @@ namespace VWOSdk
         /// </returns>
         public int BatchQueueCount()
         {
-
             return this.batchQueue.Count;
-
         }
-
-
     }
 }

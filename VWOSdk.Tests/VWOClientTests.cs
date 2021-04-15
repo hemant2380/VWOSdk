@@ -2553,7 +2553,7 @@ namespace VWOSdk.Tests
             Assert.Equal(1, vwoClient.getBatchEventQueue().BatchQueueCount());
 
             bool isQueueFlushed = vwoClient.flushEvent();
-            Assert.False(isQueueFlushed);
+            Assert.True(isQueueFlushed);
 
             Assert.Equal(0, vwoClient.getBatchEventQueue().BatchQueueCount());
         }
