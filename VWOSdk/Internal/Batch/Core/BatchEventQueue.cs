@@ -138,6 +138,7 @@ namespace VWOSdk
         /// <returns>Boolean value specifying flush was successful or not.</returns>       
         public bool flush(bool manual)
         {
+            var batchMetadata= HttpRequestBuilder.GetJsonString(this.batchQueue);
             if (batchQueue.Count == 0)
             {
                 LogDebugMessage.EventQueueEmpty(file);
@@ -146,9 +147,9 @@ namespace VWOSdk
             {
                 if (batchQueue.Count > 0)
                 {
-                    LogDebugMessage.BeforeFlushing(file, "manually", batchQueue.Count.ToString(), accountId.ToString(), "Timer will be cleared and registered again", batchQueue.ToString());
+                    LogDebugMessage.BeforeFlushing(file, "manually", batchQueue.Count.ToString(), accountId.ToString(), "Timer will be cleared and registered again", batchMetadata);
                     Task<bool> response = sendPostCall();
-                    LogDebugMessage.AfterFlushing(file, "manually", batchQueue.Count.ToString(), batchQueue.ToString());
+                    LogDebugMessage.AfterFlushing(file, "manually", batchQueue.Count.ToString(), batchMetadata);
                     disposeData();
                     return true;
                 }
@@ -161,9 +162,10 @@ namespace VWOSdk
                 if (batchQueue.Count > 0 && !isBatchProcessing)
                 {
                     isBatchProcessing = true;
-                    LogDebugMessage.BeforeFlushing(file, "", batchQueue.Count.ToString(), accountId.ToString(), "", batchQueue.ToString());
+
+                    LogDebugMessage.BeforeFlushing(file, "", batchQueue.Count.ToString(), accountId.ToString(), "", batchMetadata);
                     Task<bool> response = sendPostCall();
-                    LogDebugMessage.AfterFlushing(file, "", batchQueue.Count.ToString(), batchQueue.ToString());
+                    LogDebugMessage.AfterFlushing(file, "", batchQueue.Count.ToString(), batchMetadata);
                     disposeData();
                     return true;
                 }
