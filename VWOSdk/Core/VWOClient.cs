@@ -243,7 +243,7 @@ namespace VWOSdk
                                 trackGoalRequest.ExecuteAsync();
                             }
 
-                            LogErrorMessage.TrackApiGoalFound(file, goalIdentifier, campaignKey, userId);
+                            LogDebugMessage.TrackApiGoalFound(file, goalIdentifier, campaignKey, userId);
 
                             return true;
                         }
