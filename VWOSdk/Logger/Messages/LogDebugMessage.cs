@@ -145,6 +145,10 @@ namespace VWOSdk
         {
             Log.Debug($"({file}): Impression event - {endPoint} failed due to exceeding payload size.Parameter eventsPerRequest in batchEvents config in launch API has value:{eventsPerRequest} for accountId:{accountId}. Please read the official documentation for knowing the size limits.");
         }
+         internal static void TrackApiGoalFound(string file, string goalIdentifier, string campaignKey, string userId)
+        {
+            Log.Error($"({file}): Goal:{goalIdentifier} found for campaign:{campaignKey} and userId:{userId}");
+        }
       
     }
 }
